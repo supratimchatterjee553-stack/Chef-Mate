@@ -1,0 +1,147 @@
+{% extends "base.html" %}
+{% block title %}Cooking · {{ r.name }}{% endblock %}
+{% block content %}
+<div class="cook-wrap">
+  <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+    <h1>{{ r.emoji }} {{ r.name }}</h1>
+    <a class="btn small ghost" href="/recipe/{{ r.id }}">← Recipe page</a>
+  </div>
+  <div class="progress"><div id="pbar"></div></div>
+
+  <!-- PHASE 1: checklist -->
+  <section id="phase-check">
+    <h2>Step 0 — Gather everything (Mise en place)</h2>
+    <p class="sub">Tick off every item — materials, ingredients and spices. Cooking begins only when everything is ready.</p>
+    <div class="checklist" id="checklist"></div>
+    <br>
+    <button class="btn big" id="goBtn" disabled style="width:100%">🚫 Tick all items to begin cooking</button>
+  </section>
+
+  <!-- PHASE 2: steps -->
+  <section id="phase-cook" style="display:none">
+    <div class="step-card">
+      <div class="step-num" id="stepNum">Step 1 of N</div>
+      <div class="step-text" id="stepText"></div>
+      <div class="timer" id="timerBox">
+        <div class="clock" id="clock">00:00</div>
+        <div>
+          <div style="font-size:.85rem;color:var(--muted)">This step needs about <b id="stepMin">–</b> minutes</div>
+          <div style="margin-top:6px;display:flex;gap:8px">
+            <button class="btn small" id="startTimer">▶ Start timer</button>
+            <button class="btn small ghost" id="resetTimer">Reset</button>
+          </div>
+        </div>
+        <span style="flex:1"></span>
+        <span style="font-size:.8rem;color:var(--muted)">Timer is optional — tick “Done” whenever you're finished.</span>
+      </div>
+      <button class="btn done-btn" id="doneBtn">✅ I completed this step</button>
+      <p style="text-align:center;margin-top:12px;font-size:.85rem;color:var(--muted)">Facing a problem with this step? <a href="/assistant" style="color:var(--accent)">Ask the AI sous-chef →</a></p>
+    </div>
+  </section>
+
+  <!-- PHASE 3: finish + review -->
+  <section id="phase-done" style="display:none">
+    <div class="step-card finish">
+      <div class="big-em">🍽️</div>
+      <div class="confetti">🎉🎉🎉</div>
+      <h1>Service!</h1>
+      <p class="sub" style="margin-bottom:6px"><b>{{ r.name }}</b> is ready — {{ r.servings }} plates.</p>
+      <p class="sub">Before you go: how did it turn out? Your review helps other chefs.</p>
+      <div class="stars-input" id="fStars" style="justify-content:center">
+        {% for i in range(1,6) %}<span data-v="{{ i }}">★</span>{% endfor %}
+      </div>
+      <input type="hidden" id="fRating" value="0">
+      <textarea id="fComment" placeholder="Taste, texture, timing, tweaks you'd try next time…"></textarea>
+      <br><br>
+      <button class="btn big" id="sendReview" style="width:100%">Submit review</button>
+      <p style="margin-top:14px"><a href="/recipe/{{ r.id }}" style="color:var(--accent2)">← Back to recipe</a> &nbsp;·&nbsp; <a href="/" style="color:var(--accent2)">Cook something else</a></p>
+      <p class="sub" id="reviewDone" style="display:none;color:var(--good)">Review saved. Thank you, Chef! 🌟</p>
+    </div>
+  </section>
+</div>
+
+<script>
+const R = {{ r | tojson }};
+const steps = R.steps;
+let si = 0;
+
+/* ---------- checklist ---------- */
+const list = document.getElementById('checklist');
+const icons = {ingredient:'🥕', spice:'🌶️', equipment:'🍳'};
+R.ingredients.forEach((ing, i) => {
+  const lab = document.createElement('label');
+  lab.className = 'chk';
+  lab.innerHTML = `<span class="em">${icons[ing.kind]||'🥕'}</span>
+    <span class="nm">${ing.name}</span><span class="qt">${ing.qty}</span>
+    <input type="checkbox" data-i="${i}">`;
+  lab.querySelector('input').addEventListener('change', () => {
+    lab.classList.toggle('done', lab.querySelector('input').checked);
+    const all = [...document.querySelectorAll('#checklist input')];
+    const n = all.filter(x => x.checked).length;
+    const go = document.getElementById('goBtn');
+    go.disabled = n !== all.length;
+    go.textContent = go.disabled
+      ? `🚫 ${all.length - n} item${all.length - n > 1 ? 's' : ''} still to gather…`
+      : '🔥 Everything ready — Start cooking!';
+    document.getElementById('pbar').style.width = (n / all.length * 100) + '%';
+  });
+  list.appendChild(lab);
+});
+
+document.getElementById('goBtn').addEventListener('click', () => {
+  document.getElementById('phase-check').style.display = 'none';
+  document.getElementById('phase-cook').style.display = '';
+  showStep(0);
+});
+
+/* ---------- steps ---------- */
+function showStep(i) {
+  si = i;
+  document.getElementById('stepNum').textContent = `Step ${i + 1} of ${steps.length}`;
+  document.getElementById('stepText').textContent = steps[i].text;
+  document.getElementById('stepMin').textContent = steps[i].minutes;
+  stopTimer(); resetTimer();
+  document.getElementById('pbar').style.width = (i / steps.length * 100) + '%';
+}
+
+document.getElementById('doneBtn').addEventListener('click', () => {
+  if (si + 1 < steps.length) { showStep(si + 1); }
+  else {
+    document.getElementById('pbar').style.width = '100%';
+    document.getElementById('phase-cook').style.display = 'none';
+    document.getElementById('phase-done').style.display = '';
+    window.scrollTo(0, 0);
+  }
+});
+
+/* ---------- optional timer ---------- */
+let tick = null, secs = 0;
+const clockEl = document.getElementById('clock');
+function fmt(s){return String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0')}
+function resetTimer(){secs=0;clockEl.textContent='00:00';document.getElementById('timerBox').classList.remove('running')}
+function stopTimer(){if(tick){clearInterval(tick);tick=null}}
+document.getElementById('startTimer').addEventListener('click', e => {
+  if (tick) { stopTimer(); e.target.textContent = '▶ Resume'; return; }
+  e.target.textContent = '⏸ Pause';
+  document.getElementById('timerBox').classList.add('running');
+  tick = setInterval(() => { secs++; clockEl.textContent = fmt(secs); }, 1000);
+});
+document.getElementById('resetTimer').addEventListener('click', () => {
+  stopTimer(); resetTimer(); document.getElementById('startTimer').textContent = '▶ Start timer';
+});
+
+/* ---------- final review ---------- */
+const fStars = document.getElementById('fStars'), fRating = document.getElementById('fRating');
+[...fStars.children].forEach(s => s.addEventListener('click', () => {
+  fRating.value = s.dataset.v;
+  [...fStars.children].forEach(x => x.classList.toggle('on', +x.dataset.v <= +fRating.value));
+}));
+document.getElementById('sendReview').addEventListener('click', async () => {
+  if (+fRating.value < 1) { alert('Please pick a star rating ⭐'); return; }
+  const body = new URLSearchParams({rating: fRating.value, comment: document.getElementById('fComment').value});
+  await fetch(`/recipe/${R.id}/review`, {method:'POST', body});
+  document.getElementById('sendReview').disabled = true;
+  document.getElementById('reviewDone').style.display = '';
+});
+</script>
+{% endblock %}

@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+{% block title %}{{ r.name }}{% endblock %}
+{% block content %}
+
+<div class="hero">
+  <div class="emoji">{{ r.emoji }}</div>
+  <div style="flex:1;min-width:260px">
+    <span class="cui">{{ r.cuisine }} Cuisine</span>
+    <h1>{{ r.name }}</h1>
+    <p style="color:var(--muted);max-width:640px">{{ r.description }}</p>
+    <div class="facts">
+      <span class="badge diff-{{ r.difficulty }}">{{ r.difficulty }}</span>
+      <span class="badge">⏱ {{ r.time_minutes }} minutes</span>
+      <span class="badge">🍽️ Serves {{ r.servings }}</span>
+      <span class="badge">⭐ {{ r.avg if r.n_reviews else '—' }} ({{ r.n_reviews }} reviews)</span>
+    </div>
+  </div>
+</div>
+
+<div class="cols">
+  <aside>
+    <div class="panel">
+      <h2 style="margin-top:0">Everything you need</h2>
+      {% set groups = [('ingredient','Ingredients','🧺'),('spice','Spices & Seasoning','🌶️'),('equipment','Equipment','🍳')] %}
+      {% for kind, label, em in groups %}
+        {% set items = r.ingredients | selectattr('kind','equalto',kind) | list %}
+        {% if items %}
+          <p style="margin:12px 0 4px;font-weight:600">{{ em }} {{ label }}</p>
+          {% for i in items %}
+          <div class="ing-row"><span class="kind-{{ kind }}">{{ i.name }}</span><span class="tmin">{{ i.qty }}</span></div>
+          {% endfor %}
+        {% endif %}
+      {% endfor %}
+    </div>
+    <br>
+    {% if current_user %}
+    <a class="btn big" style="width:100%;text-align:center" href="/start/{{ r.id }}">🔥 Start Cooking</a>
+    {% else %}
+    <a class="btn big ghost" style="width:100%;text-align:center" href="{{ url_for('login', next='/recipe/' ~ r.id|string) }}">Log in to Start Cooking</a>
+    {% endif %}
+  </aside>
+
+  <div>
+    <div class="panel">
+      <h2 style="margin-top:0">Method</h2>
+      <ol class="step-list">
+        {% for s in r.steps %}
+        <li>{{ s.text }} <span class="tmin">({{ s.minutes }} min)</span></li>
+        {% endfor %}
+      </ol>
+    </div>
+
+    <div class="panel" style="margin-top:20px">
+      <h2 style="margin-top:0">Reviews ({{ r.n_reviews }})</h2>
+
+      {% if current_user %}
+      <form method="post" action="/recipe/{{ r.id }}/review" style="margin-bottom:18px">
+        <label style="margin-top:0">Your rating{% if my_review %} (you rated {{ my_review.rating }}★ — submitting updates it){% endif %}</label>
+        <div class="stars-input" id="starPick">
+          {% for i in range(1,6) %}<span data-v="{{ i }}">★</span>{% endfor %}
+        </div>
+        <input type="hidden" name="rating" id="ratingVal" value="{{ my_review.rating if my_review else 0 }}">
+        <textarea name="comment" placeholder="How did this dish turn out? Any chef notes or twists?">{{ my_review.comment if my_review else '' }}</textarea>
+        <br>
+        <button class="btn small">Submit review</button>
+      </form>
+      <script>
+        const pick=document.getElementById('starPick'),val=document.getElementById('ratingVal');
+        function paint(v){[...pick.children].forEach(s=>s.classList.toggle('on',+s.dataset.v<=v))}
+        pick.addEventListener('click',e=>{if(e.target.dataset.v){val.value=e.target.dataset.v;paint(val.value)}});
+        paint(+val.value||0);
+      </script>
+      {% else %}
+      <p class="empty"><a href="{{ url_for('login', next='/recipe/' ~ r.id|string) }}" style="color:var(--accent)">Log in</a> to leave a review.</p>
+      {% endif %}
+
+      {% if reviews %}
+        {% for v in reviews %}
+        <div class="review">
+          <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px">
+            <span class="who">{{ v.name }}</span>
+            <span class="when">{{ v.created_at[:10] }}</span>
+          </div>
+          <div class="stars">{{ '★' * v.rating }}{{ '☆' * (5 - v.rating) }}</div>
+          {% if v.comment %}<p style="font-size:.94rem">{{ v.comment }}</p>{% endif %}
+        </div>
+        {% endfor %}
+      {% else %}
+        <p class="empty">No reviews yet — be the first to cook and review this dish! 🍽️</p>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

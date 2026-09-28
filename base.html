@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{% block title %}ChefMate{% endblock %} · ChefMate</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<header class="topbar">
+  <a class="brand" href="{{ url_for('home') }}">👨‍🍳 <span>Chef<b>Mate</b></span></a>
+  <nav>
+    <a href="{{ url_for('home') }}">Recipes</a>
+    <a href="{{ url_for('assistant') }}">🤖 AI Sous-Chef</a>
+    {% if current_user %}
+      <a href="{{ url_for('profile') }}">Profile</a>
+      <a href="{{ url_for('settings') }}">Settings</a>
+      <span class="nav-user">{{ current_user.name }}</span>
+      <a class="btn small ghost" href="{{ url_for('logout') }}">Logout</a>
+    {% else %}
+      <a href="{{ url_for('login') }}">Login</a>
+      <a class="btn small" href="{{ url_for('register') }}">Register</a>
+    {% endif %}
+  </nav>
+</header>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    <div class="flashes">
+    {% for cat, m in messages %}<div class="flash {{ cat }}">{{ m }}</div>{% endfor %}
+    </div>
+  {% endif %}
+{% endwith %}
+
+<main class="container">
+{% block content %}{% endblock %}
+</main>
+
+<footer class="footer">ChefMate — built for professional kitchens · 🌎 World recipes · AI-assisted</footer>
+
+{% block voice_widget %}
+<button class="fab" id="vFab" title="Talk to your AI sous-chef">🎤</button>
+<span class="fab-tip">Ask me anything, Chef 👨‍🍳</span>
+<div class="voice-panel" id="voicePanel">
+  <div class="vp-head">
+    <b>🤖 AI Sous-Chef · voice</b>
+    <button id="vSpeak" title="Voice replies ON">🔊</button>
+    <button id="vClose" title="Close">✕</button>
+  </div>
+  <div class="v-status" id="vStatus">Tap the mic and speak — or type below</div>
+  <div class="v-log" id="vLog">
+    <div class="bubble bot">Hello Chef 👨‍🍳 Ask me about any recipe, spice, or a problem at your station — by voice or text.</div>
+  </div>
+  <div class="v-input">
+    <button id="vMic" title="Speak">🎤</button>
+    <input id="vMsg" placeholder="Type your question…">
+    <button id="vSend" title="Send">➤</button>
+  </div>
+</div>
+<script src="{{ url_for('static', filename='voice.js') }}"></script>
+{% endblock %}
+</body>
+</html>

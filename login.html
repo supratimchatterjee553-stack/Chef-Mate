@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}Login{% endblock %}
+{% block content %}
+<form class="auth" method="post">
+  <h1>Welcome back, Chef 👨‍🍳</h1>
+  <p class="sub">Log in to your kitchen</p>
+  <label for="email">Email</label>
+  <input id="email" name="email" type="email" placeholder="you@restaurant.com" required autofocus>
+  <label for="password">Password</label>
+  <input id="password" name="password" type="password" placeholder="••••••••" required>
+  <br><br>
+  <button class="btn" style="width:100%">Log In</button>
+  <p class="auth-switch">New to ChefMate? <a href="{{ url_for('register') }}">Create an account</a></p>
+</form>
+{% endblock %}

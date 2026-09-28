@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}Register{% endblock %}
+{% block content %}
+<form class="auth" method="post">
+  <h1>Join ChefMate 🧑‍🍳</h1>
+  <p class="sub">Your details are stored in our database and used to personalise recipes to your region.</p>
+
+  <label for="name">Full name *</label>
+  <input id="name" name="name" placeholder="Chef Supratim Chatterjee" required>
+
+  <label for="email">Email *</label>
+  <input id="email" name="email" type="email" placeholder="you@restaurant.com" required>
+
+  <div class="form-row">
+    <div>
+      <label for="password">Password * <small>(min 6 chars)</small></label>
+      <input id="password" name="password" type="password" required minlength="6">
+    </div>
+    <div>
+      <label for="confirm">Confirm password *</label>
+      <input id="confirm" name="confirm" type="password" required minlength="6">
+    </div>
+  </div>
+
+  <label for="role">Your role</label>
+  <select id="role" name="role">
+    <option>Head Chef</option><option>Sous Chef</option><option>Line Chef</option>
+    <option>Pastry Chef</option><option>Commis Chef</option><option>Home Chef</option>
+  </select>
+
+  <label for="restaurant">Restaurant / Hotel (optional)</label>
+  <input id="restaurant" name="restaurant" placeholder="The Grand Kitchen, Kolkata">
+
+  <label for="address">Address (street, locality)</label>
+  <input id="address" name="address" placeholder="12 Park Street">
+
+  <div class="form-row">
+    <div>
+      <label for="city">City</label>
+      <input id="city" name="city" placeholder="Kolkata">
+    </div>
+    <div>
+      <label for="country">Country</label>
+      <input id="country" name="country" placeholder="India">
+    </div>
+  </div>
+
+  <p class="filter-note" style="margin:10px 0 0">📍 Your address decides which cuisines appear first on your home page.</p>
+  <br>
+  <button class="btn" style="width:100%">Create Account</button>
+  <p class="auth-switch">Already have an account? <a href="{{ url_for('login') }}">Log in</a></p>
+</form>
+{% endblock %}

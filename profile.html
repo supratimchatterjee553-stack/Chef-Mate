@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}Profile{% endblock %}
+{% block content %}
+<h1>Chef Profile</h1>
+<p class="sub">Your details drive recipe personalisation on the home page.</p>
+
+<div class="profile-head panel" style="margin-bottom:20px">
+  <div class="avatar">{{ user.name[:1]|upper }}</div>
+  <div style="flex:1">
+    <h2 style="margin:0">{{ user.name }}</h2>
+    <p class="sub" style="margin:4px 0 8px">{{ user.role }}{% if user.restaurant %} · {{ user.restaurant }}{% endif %}</p>
+    <div style="display:flex;gap:16px;flex-wrap:wrap;font-size:.9rem;color:var(--muted)">
+      <span>📧 {{ user.email }}</span>
+      <span>📅 Joined {{ user.created_at[:10] }}</span>
+      <span>⭐ {{ stats.n }} review{{ '' if stats.n == 1 else 's' }}{% if stats.avg %} · avg {{ stats.avg }}★{% endif %}</span>
+    </div>
+  </div>
+</div>
+
+<div class="cols">
+  <div class="panel">
+    <h2 style="margin-top:0">Edit profile</h2>
+    <form method="post">
+      <label for="name">Full name</label>
+      <input id="name" name="name" value="{{ user.name }}" required>
+      <label for="role">Role</label>
+      <select id="role" name="role">
+        {% for r in ['Head Chef','Sous Chef','Line Chef','Pastry Chef','Commis Chef','Home Chef'] %}
+        <option {{ 'selected' if user.role == r }}>{{ r }}</option>
+        {% endfor %}
+      </select>
+      <label for="restaurant">Restaurant / Hotel</label>
+      <input id="restaurant" name="restaurant" value="{{ user.restaurant }}">
+      <label for="address">Address</label>
+      <input id="address" name="address" value="{{ user.address }}">
+      <div class="form-row">
+        <div><label for="city">City</label><input id="city" name="city" value="{{ user.city }}"></div>
+        <div><label for="country">Country</label><input id="country" name="country" value="{{ user.country }}"></div>
+      </div>
+      <br>
+      <button class="btn" style="width:100%">Save changes</button>
+    </form>
+  </div>
+  <div class="panel">
+    <h2 style="margin-top:0">Your recent activity</h2>
+    {% if recent %}
+      {% for v in recent %}
+      <div class="review">
+        <a href="/recipe/{{ v.rid }}" style="font-weight:600">{{ v.emoji }} {{ v.name }}</a>
+        <div class="stars">{{ '★' * v.rating }}{{ '☆' * (5 - v.rating) }}</div>
+        {% if v.comment %}<p style="font-size:.92rem">{{ v.comment }}</p>{% endif %}
+        <span class="when">{{ v.created_at[:10] }}</span>
+      </div>
+      {% endfor %}
+    {% else %}
+      <p class="empty">No activity yet — cook something and leave a review! 🔥</p>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

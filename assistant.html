@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% block title %}AI Sous-Chef{% endblock %}
+{% block voice_widget %}{% endblock %}
+{% block content %}
+<div class="chat-shell">
+  <div>
+    <h1>🤖 AI Sous-Chef</h1>
+    <p class="sub" style="margin-bottom:4px">Stuck on any step? Ask anything — techniques, spices, substitutions, timings. Upload a photo of your pan or plate and I'll diagnose it.</p>
+  </div>
+  <div class="chat-log" id="log">
+    <div class="bubble bot">Hello{% if user %} Chef {{ user.name.split()[0] }}{% endif %} 👨‍🍳 I'm your AI sous-chef. Ask me about any dish on the menu, any spice, or any problem you're facing at a station right now. You can also attach a photo of what's going wrong (or right!).</div>
+  </div>
+  <div class="attach-row" id="attachRow"></div>
+  <div class="chat-input">
+    <textarea id="msg" placeholder="e.g. My butter chicken gravy is splitting — what do I do?"></textarea>
+    <button class="icon-btn" id="imgBtn" title="Attach a photo">📎</button>
+    <button class="icon-btn" id="sendBtn" title="Send" style="background:var(--accent);color:#1a0e05;font-weight:800">➤</button>
+  </div>
+  <input type="file" id="imgInput" accept="image/*" hidden>
+</div>
+
+<script>
+const log = document.getElementById('log'), msgBox = document.getElementById('msg');
+let history = [], pendingImage = null;
+
+function addBubble(cls, html){
+  const d = document.createElement('div');
+  d.className = 'bubble ' + cls;
+  d.innerHTML = html;
+  log.appendChild(d); log.scrollTop = log.scrollHeight;
+  return d;
+}
+function fmt(t){ return String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;'); }
+
+function send(){
+  const text = msgBox.value.trim();
+  if (!text && !pendingImage) return;
+  let userHtml = fmt(text);
+  if (pendingImage) userHtml += `<img src="${pendingImage}">`;
+  addBubble('user', userHtml || '[photo]');
+  const payload = {message: text, history: history.slice(-8), image: pendingImage};
+  history.push({role: 'user', text});
+  msgBox.value = ''; clearImage();
+  const typing = addBubble('bot typing', '<i></i><i></i><i></i>');
+  fetch('/api/assistant', {
+    method: 'POST', headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify(payload)
+  }).then(r => r.json()).then(d => {
+    typing.remove();
+    const reply = d.ok ? d.reply : 'Something went wrong — please try again.';
+    addBubble('bot', fmt(reply));
+    history.push({role: 'assistant', text: reply});
+  }).catch(() => { typing.remove(); addBubble('bot', 'Network error — please try again.'); });
+}
+
+/* image attach */
+document.getElementById('imgBtn').addEventListener('click', () => document.getElementById('imgInput').click());
+document.getElementById('imgInput').addEventListener('change', e => {
+  const f = e.target.files[0]; if (!f) return;
+  if (f.size > 4 * 1024 * 1024) { alert('Please keep photos under 4 MB.'); return; }
+  const rd = new FileReader();
+  rd.onload = () => {
+    pendingImage = rd.result;
+    const row = document.getElementById('attachRow');
+    row.innerHTML = `<div class="img-preview"><img src="${pendingImage}"><button title="remove">✕</button></div>`;
+    row.querySelector('button').onclick = clearImage;
+  };
+  rd.readAsDataURL(f);
+});
+function clearImage(){ pendingImage = null; document.getElementById('attachRow').innerHTML=''; document.getElementById('imgInput').value=''; }
+
+msgBox.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); }
+});
+document.getElementById('sendBtn').addEventListener('click', send);
+msgBox.focus();
+</script>
+{% endblock %}

@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% block title %}World Recipes{% endblock %}
+{% block content %}
+
+{% if not current_user %}
+<h1>Welcome to ChefMate 👨‍🍳</h1>
+<p class="sub">The professional kitchen companion — world cuisines, guided cooking, and an AI sous-chef at your side. <a class="lnk" href="{{ url_for('register') }}" style="color:var(--accent)">Create your chef account</a> to get recipes personalised to your location.</p>
+{% else %}
+<h1>What are we cooking today, Chef {{ current_user.name.split()[0] }}?</h1>
+<p class="sub">Recipes filtered for <b style="color:var(--accent2)">{{ current_user.city or current_user.country or 'your region' }}</b></p>
+{% endif %}
+
+<div class="searchbar">
+  <input type="text" id="q" placeholder="Search dishes or ingredients… (e.g. biryani, tofu, saffron)" value="{{ q }}">
+  <button class="btn" onclick="go()">Search</button>
+</div>
+<script>
+function go(){
+  const q=document.getElementById('q').value.trim();
+  window.location='/?q='+encodeURIComponent(q)+(new URLSearchParams(location.search).get('cuisine')?'&cuisine='+new URLSearchParams(location.search).get('cuisine'):'');
+}
+document.getElementById('q').addEventListener('keydown',e=>{if(e.key==='Enter')go()});
+</script>
+
+{% if local_cuisines and not cuisine and not q %}
+<p class="filter-note">📍 Based on your address we're showing you <b>{{ local_cuisines|join(', ') }}</b> dishes first — other world cuisines follow below.</p>
+{% endif %}
+
+<h2>Popular categories around the world</h2>
+<div class="cats">
+  <a class="cat {% if not cuisine %}active{% endif %}" href="/">
+    <div class="em">🌍</div><div class="nm">All Cuisines</div>
+    <div class="tg">Everything, everywhere</div>
+  </a>
+  {% for name, em, tag in categories %}
+  <a class="cat {% if cuisine == name %}active{% endif %}" href="/?cuisine={{ name }}">
+    <div class="em">{{ em }}</div><div class="nm">{{ name }}</div>
+    <div class="tg">{{ tag }}</div>
+  </a>
+  {% endfor %}
+</div>
+
+{% if for_you %}
+<h2>Popular near you {% if local_cuisines %}— {{ local_cuisines|join(', ') }}{% endif %}</h2>
+<div class="grid">
+  {% for r in for_you[:6] %}
+  <a class="card" href="/recipe/{{ r.id }}">
+    <div class="thumb">{{ r.emoji }}</div>
+    <div class="body">
+      <span class="cui">{{ r.cuisine }}</span>
+      <h3>{{ r.name }}</h3>
+      <div class="meta"><span class="stars">{{ '★' * (r.avg|round|int) if r.n_reviews else '' }}</span><span>⏱ {{ r.time_minutes }} min</span><span class="badge diff-{{ r.difficulty }}">{{ r.difficulty }}</span></div>
+    </div>
+  </a>
+  {% endfor %}
+</div>
+{% endif %}
+
+<h2>{% if cuisine %}{{ cuisine }} recipes{% elif q %}Results for “{{ q }}”{% elif for_you %}All recipes{% else %}Popular recipes worldwide{% endif %}</h2>
+{% if recipes %}
+<div class="grid">
+  {% for r in recipes %}
+  <a class="card" href="/recipe/{{ r.id }}">
+    <div class="thumb">{{ r.emoji }}</div>
+    <div class="body">
+      <span class="cui">{{ r.cuisine }}</span>
+      <h3>{{ r.name }}</h3>
+      <div class="meta">
+        <span class="stars">{{ ('★'*r.avg|round|int) ~ ' ' ~ r.avg if r.n_reviews else 'No reviews yet' }}</span>
+        <span>⏱ {{ r.time_minutes }} min</span>
+        <span class="badge diff-{{ r.difficulty }}">{{ r.difficulty }}</span>
+      </div>
+    </div>
+  </a>
+  {% endfor %}
+</div>
+{% else %}
+<p class="empty">No recipes match your search. Try another dish or ingredient. 🍳</p>
+{% endif %}
+{% endblock %}

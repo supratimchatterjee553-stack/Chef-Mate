@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}Settings{% endblock %}
+{% block content %}
+<h1>Settings</h1>
+<p class="sub">Account security and data controls.</p>
+<div class="settings-grid">
+  <div class="panel">
+    <h2 style="margin-top:0">🔑 Change password</h2>
+    <form method="post">
+      <input type="hidden" name="action" value="password">
+      <label for="old">Current password</label>
+      <input id="old" name="old_password" type="password" required>
+      <label for="new">New password (min 6 chars)</label>
+      <input id="new" name="new_password" type="password" required minlength="6">
+      <br>
+      <button class="btn" style="width:100%">Update password</button>
+    </form>
+  </div>
+  <div class="panel danger">
+    <h2 style="margin-top:0">🧹 Data controls</h2>
+    <p style="font-size:.93rem;color:var(--muted)">Your registration details live in ChefMate's database and are used to log you in and personalise recipes.</p>
+    <hr class="sep">
+    <form method="post" onsubmit="return confirm('Delete ALL your reviews? This cannot be undone.')">
+      <input type="hidden" name="action" value="delete_reviews">
+      <button class="btn ghost" style="width:100%">Delete all my reviews</button>
+    </form>
+  </div>
+</div>
+{% endblock %}
